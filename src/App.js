@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import './App.css';
 
 const StarsDisplay = props => (
@@ -21,6 +21,12 @@ const PlayNumber = props => (
 
 const PLayAgain = props => (
   <div className="game-done">
+    <div 
+      className="message"
+      style={{color: props.gameStatus === 'lost' ? 'red' : 'green'}}
+    >
+      {props.gameStatus === 'lost' ? 'Game Over' : 'Well Done!'}
+    </div>
     <button onClick={() => props.reSet()}>Play Again</button>
   </div>
 )
@@ -29,9 +35,21 @@ const StarMatch = () => {
 	const [stars, setStars] = useState(utils.random(1, 9));
   const [availableNums, setAvailableNums] = useState(utils.range(1,9));
   const [candidateNums, setCandidateNums] = useState([]);
+  const [timeLeft, setTimeLeft] = useState(1000)
 
   const vandidatesAreWrong = utils.sum(candidateNums) > stars;
-  const gameIsDone = !availableNums.length
+  const gameStatus = !availableNums.length
+    ? 'won'
+    : timeLeft === 0 ? 'lost' : 'active'
+
+  useEffect(() => {
+    if(timeLeft > 0 && availableNums.length > 0){
+      const timerid = setTimeout(() => {
+        setTimeLeft(timeLeft - 1)
+      }, 10)
+      return () => clearTimeout(timerid)
+    }
+  })
 
   const resetGame = () => {
     setStars(utils.random(1, 9))
@@ -48,7 +66,7 @@ const StarMatch = () => {
   }
 
   const onNumberClick = (number, currentStatus) => {
-    if(currentStatus === 'used')
+    if(gameStatus !== 'active' || currentStatus === 'used')
       return;
     const newCandidateNums = currentStatus === 'available' ? candidateNums.concat(number) : candidateNums.filter(n => n !== number)
     if(utils.sum(newCandidateNums) !== stars)
@@ -69,7 +87,7 @@ const StarMatch = () => {
       <div className="body">
         <div className="left">
         {
-          gameIsDone ? <PLayAgain reSet={resetGame}/> : <StarsDisplay count={stars}/>
+          gameStatus !== 'active' ? <PLayAgain reSet={resetGame} gameStatus={gameStatus}/> : <StarsDisplay count={stars}/>
         }
         </div>
         <div className="right">
@@ -83,7 +101,7 @@ const StarMatch = () => {
           )}
         </div>
       </div>
-      <div className="timer">Time Remaining: 10</div>
+      <div className="timer">Time Remaining: {(timeLeft/100).toFixed(2)}</div>
     </div>
   );
 };
